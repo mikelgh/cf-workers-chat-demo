@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <!--
   THIS IS NOT THE INTERESTING FILE
@@ -33,6 +34,11 @@ body {
 }
 #chatlog span.username {
   font-weight: bold;
+}
+#chatlog span.timestamp {
+  font-size: 0.8em;
+  color: #888;
+  margin-left: 8px;
 }
 #spacer {
   height: calc(100vh - 32px - 5em);
@@ -299,7 +305,7 @@ function startChat() {
   roomname = roomname.replace(/[^a-zA-Z0-9_-]/g, "").replace(/_/g, "-").toLowerCase();
 
   if (roomname.length > 32 && !roomname.match(/^[0-9a-f]{64}$/)) {
-    addChatMessage("ERROR", "Invalid room name.");
+    addChatMessage("系统", "无效的房间名称。");
     return;
   }
 
@@ -407,7 +413,7 @@ function join() {
     let data = JSON.parse(event.data);
 
     if (data.error) {
-      addChatMessage(null, "* Error: " + data.error);
+      addChatMessage("系统", "* 错误: " + data.error);
     } else if (data.joined) {
       let p = document.createElement("p");
       p.innerText = data.joined;
@@ -423,25 +429,22 @@ function join() {
       // All pre-join messages have been delivered.
       if (!wroteWelcomeMessages) {
         wroteWelcomeMessages = true;
-        addChatMessage(null,
-            "* 【修改测试 123】This is a demo app built with Cloudflare Workers Durable Objects. The source code " +
-            "can be found at: https://github.com/cloudflare/workers-chat-demo");
-        addChatMessage(null,
-            "* WARNING: Participants in this chat are random people on the internet. " +
-            "Names are not authenticated; anyone can pretend to be anyone. The people " +
-            "you are chatting with are NOT Cloudflare employees. Chat history is saved.");
+        addChatMessage("系统",
+            "* 【修改测试 123】这是一个使用 Cloudflare Workers Durable Objects 构建的演示应用。源代码可以在这里找到: https://github.com/cloudflare/workers-chat-demo");
+        addChatMessage("系统",
+            "* 警告: 本聊天室的参与者是互联网随机用户。名字未经认证；任何人都可以冒充他人。与您聊天的人并非 Cloudflare 员工。聊天记录会被保存。");
         if (roomname.length == 64) {
-          addChatMessage(null,
-              "* This is a private room. You can invite someone to the room by sending them the URL.");
+          addChatMessage("系统",
+              "* 这是一个私密房间。您可以通过发送链接邀请他人加入。");
         } else {
-          addChatMessage(null,
-              "* Welcome to #" + roomname + ". Say hi!");
+          addChatMessage("系统",
+              "* 欢迎来到 #" + roomname + "。打个招呼吧！");
         }
       }
     } else {
       // A regular chat message.
       if (data.timestamp > lastSeenTimestamp) {
-        addChatMessage(data.name, data.message);
+        addChatMessage(data.name, data.message, data.timestamp);
         lastSeenTimestamp = data.timestamp;
       }
     }
@@ -457,7 +460,7 @@ function join() {
   });
 }
 
-function addChatMessage(name, text) {
+function addChatMessage(name, text, timestamp) {
   let p = document.createElement("p");
   if (name) {
     let tag = document.createElement("span");
@@ -466,6 +469,24 @@ function addChatMessage(name, text) {
     p.appendChild(tag);
   }
   p.appendChild(document.createTextNode(text));
+
+  if (timestamp) {
+    let timeSpan = document.createElement("span");
+    timeSpan.className = "timestamp";
+    let date = new Date(timestamp);
+    
+    // 格式化日期和时间为 YYYY-MM-DD HH:MM:SS
+    let year = date.getFullYear();
+    let month = (date.getMonth() + 1).toString().padStart(2, '0');
+    let day = date.getDate().toString().padStart(2, '0');
+    let hours = date.getHours().toString().padStart(2, '0');
+    let minutes = date.getMinutes().toString().padStart(2, '0');
+    let seconds = date.getSeconds().toString().padStart(2, '0');
+    let dateTimeString = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    
+    timeSpan.innerText = ` [${dateTimeString}]`;
+    p.appendChild(timeSpan);
+  }
 
   // Append the new chat line, making sure that if the chatlog was scrolled to the bottom
   // before, it remains scrolled to the bottom, and otherwise the scroll position doesn't
